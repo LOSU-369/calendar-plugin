@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Event Extractor to Google Calendar",
+  "version": "0.1.0",
+  "description": "Extract events from visible content or selected text and create Google Calendar events after confirmation.",
+  "action": {
+    "default_title": "Event Extractor",
+    "default_popup": "src/popup/index.html"
+  },
+  "options_page": "src/options/index.html",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "contextMenus",
+    "identity"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://www.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "oauth2": {
+    "client_id": "233080458473-fq76ab4fp58ukg5n2ftpo84avlvv1ac7.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly"
+    ]
+  }
+}
