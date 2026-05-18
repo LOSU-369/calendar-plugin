@@ -6,8 +6,10 @@ import "../popup/styles.css";
 document.documentElement.classList.add("options-page");
 document.body.classList.add("options-page");
 
+const DEFAULT_BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || "http://localhost:8787";
+
 const Options = (): JSX.Element => {
-  const [backendBaseUrl, setBackendBaseUrl] = useState("http://localhost:8787");
+  const [backendBaseUrl, setBackendBaseUrl] = useState(DEFAULT_BACKEND_BASE_URL);
   const [timezone, setTimezone] = useState("Europe/Zurich");
   const [locale, setLocale] = useState("en-US");
   const [debug, setDebug] = useState(false);
