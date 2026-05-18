@@ -18,6 +18,7 @@ export interface EventCandidate {
   endDate?: string;
   startTime?: string;
   endTime?: string;
+  timezone?: string;
   allDay: boolean;
   location?: string;
   description?: string;

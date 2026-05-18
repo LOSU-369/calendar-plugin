@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Event Extractor icon">
+  <rect width="128" height="128" rx="28" fill="#1a73e8"/>
+  <rect x="24" y="27" width="80" height="78" rx="14" fill="#ffffff"/>
+  <rect x="24" y="27" width="80" height="24" rx="14" fill="#e8f0fe"/>
+  <rect x="24" y="43" width="80" height="8" fill="#e8f0fe"/>
+  <rect x="39" y="17" width="10" height="24" rx="5" fill="#1557b0"/>
+  <rect x="79" y="17" width="10" height="24" rx="5" fill="#1557b0"/>
+  <rect x="37" y="63" width="18" height="14" rx="4" fill="#a8c7fa"/>
+  <rect x="60" y="63" width="31" height="8" rx="4" fill="#d7e3fc"/>
+  <path d="M43 89.5 56.5 101 86 68" fill="none" stroke="#137333" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

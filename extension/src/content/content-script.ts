@@ -6,6 +6,13 @@ interface ExtractTextResponse {
 
 const cleanText = (value: string): string => value.replace(/\s+/g, " ").trim();
 
+const cleanMultilineText = (value: string): string =>
+  value
+    .split(/\n+/)
+    .map((line) => cleanText(line))
+    .filter(Boolean)
+    .join("\n");
+
 const EMAIL_BODY_LABEL_PATTERN =
   /message body|email body|mail body|nachrichtentext|nachrichteninhalt|邮件正文|郵件正文|本文|message text|message content/i;
 
@@ -150,10 +157,89 @@ const isInteractiveElement = (element: Element): boolean =>
     )
   );
 
+const readJsonLdBlocks = (): unknown[] => {
+  const blocks: unknown[] = [];
+  const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+  scripts.forEach((script) => {
+    try {
+      blocks.push(JSON.parse(script.textContent ?? ""));
+    } catch {
+      // Ignore malformed JSON-LD blocks.
+    }
+  });
+  return blocks;
+};
+
+const visitJsonRecords = (value: unknown, visitor: (record: Record<string, unknown>) => void): void => {
+  if (!value) {
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => visitJsonRecords(item, visitor));
+    return;
+  }
+  if (typeof value !== "object") {
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+  visitor(record);
+  Object.values(record).forEach((item) => visitJsonRecords(item, visitor));
+};
+
+const schemaTypes = (record: Record<string, unknown>): string[] => {
+  const typeValue = record["@type"];
+  const types = Array.isArray(typeValue) ? typeValue : [typeValue];
+  return types.filter((item): item is string => typeof item === "string");
+};
+
+const isSchemaEvent = (record: Record<string, unknown>): boolean => schemaTypes(record).some((item) => /event$/i.test(item));
+
+const stringValue = (value: unknown): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const cleaned = cleanText(value);
+  return cleaned || undefined;
+};
+
+const stringifyAddress = (value: unknown): string | undefined => {
+  if (typeof value === "string") {
+    return cleanText(value);
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const parts = [
+    stringValue(record.streetAddress),
+    stringValue(record.addressLocality),
+    stringValue(record.addressRegion),
+    stringValue(record.postalCode),
+    stringValue(record.addressCountry)
+  ].filter(Boolean);
+  return Array.from(new Set(parts)).join(", ") || undefined;
+};
+
+const stringifyLocation = (value: unknown): string | undefined => {
+  if (typeof value === "string") {
+    return cleanText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(stringifyLocation).filter(Boolean).join("; ") || undefined;
+  }
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const name = stringValue(record.name);
+  const address = stringifyAddress(record.address);
+  return [name, address].filter(Boolean).join(", ") || undefined;
+};
+
 const collectJsonLdTitleHints = (): string[] => {
   const hints: string[] = [];
-  const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
-
+  const blocks = readJsonLdBlocks();
   const visit = (value: unknown): void => {
     if (!value) {
       return;
@@ -167,27 +253,54 @@ const collectJsonLdTitleHints = (): string[] => {
     }
 
     const record = value as Record<string, unknown>;
-    const typeValue = record["@type"];
     const nameValue = record.name;
-    const types = Array.isArray(typeValue) ? typeValue : [typeValue];
-    const hasEventType = types.some((item) => typeof item === "string" && /event/i.test(item));
 
-    if (hasEventType && typeof nameValue === "string" && isGoodTitleHint(nameValue)) {
+    if (isSchemaEvent(record) && typeof nameValue === "string" && isGoodTitleHint(nameValue)) {
       hints.push(cleanText(nameValue));
     }
 
     Object.values(record).forEach(visit);
   };
 
-  scripts.forEach((script) => {
-    try {
-      visit(JSON.parse(script.textContent ?? ""));
-    } catch {
-      // Ignore malformed JSON-LD blocks.
-    }
-  });
+  blocks.forEach(visit);
 
   return hints;
+};
+
+const collectJsonLdEventContext = (): string => {
+  const eventBlocks: string[] = [];
+  const seen = new Set<string>();
+
+  readJsonLdBlocks().forEach((block) => {
+    visitJsonRecords(block, (record) => {
+      if (!isSchemaEvent(record)) {
+        return;
+      }
+
+      const name = stringValue(record.name);
+      const startDate = stringValue(record.startDate);
+      const endDate = stringValue(record.endDate);
+      const location = stringifyLocation(record.location);
+      const description = stringValue(record.description);
+      const signature = [name, startDate, endDate, location].filter(Boolean).join("|").toLowerCase();
+      if (!signature || seen.has(signature)) {
+        return;
+      }
+      seen.add(signature);
+
+      const lines = [
+        name ? `Event title: ${name}` : undefined,
+        startDate ? `Date and Time: ${[startDate, endDate].filter(Boolean).join(" - ")}` : undefined,
+        location ? `Location: ${location}` : undefined,
+        description ? `Description: ${description.slice(0, 1000)}` : undefined
+      ].filter(Boolean);
+      if (lines.length) {
+        eventBlocks.push(lines.join("\n"));
+      }
+    });
+  });
+
+  return eventBlocks.join("\n\n").slice(0, 12000);
 };
 
 const extractTitleHints = (root: ParentNode = document.body): string[] => {
@@ -272,9 +385,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message?.type === "EXTRACT_TEXT_CONTEXT") {
     const selectedText = window.getSelection()?.toString().trim() || undefined;
+    const hostKind = getHostKind();
     const scopedRoot = findReadingPaneRoot() ?? document.body;
+    const visibleText = extractVisibleText(scopedRoot);
+    const documentText = hostKind === "default" ? cleanMultilineText(document.body.innerText || "") : "";
+    const fallbackText =
+      visibleText.length < 80 && scopedRoot instanceof HTMLElement
+        ? cleanMultilineText(scopedRoot.innerText || document.body.innerText || "")
+        : "";
+    const structuredText = collectJsonLdEventContext();
     const response: ExtractTextResponse = {
-      visibleText: extractVisibleText(scopedRoot),
+      visibleText: [structuredText, documentText || visibleText || fallbackText].filter(Boolean).join("\n").slice(0, 40000),
       selectedText,
       titleHints: extractTitleHints(scopedRoot)
     };

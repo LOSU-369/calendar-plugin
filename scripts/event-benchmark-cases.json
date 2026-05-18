@@ -1,0 +1,117 @@
+[
+  {
+    "name": "reformiert-zuerich-gottesdienst",
+    "url": "https://www.reformiert-zuerich.ch/4.php?read_group=1706",
+    "expected": {
+      "title": "Auffahrt-Gottesdienst",
+      "date": "2026-05-14",
+      "startTime": "11:00"
+    }
+  },
+  {
+    "name": "eventbrite-syn-apex-zurich",
+    "url": "https://www.eventbrite.com/e/syn-apex-world-tour-2026zurich-tickets-1978821177410",
+    "expected": {
+      "title": "SYN APEX World Tour 2026—Zürich",
+      "date": "2026-06-30",
+      "startTime": "16:00",
+      "endTime": "21:00",
+      "location": "Europaallee"
+    }
+  },
+  {
+    "name": "allevents-aware-zurich",
+    "url": "https://allevents.in/zurich/aware-%E2%80%A2-live-in-z%C3%BCrich-16-mai-2026/200029063808435",
+    "expected": {
+      "title": "AWARE • live in Zürich 16. Mai 2026",
+      "date": "2026-05-16",
+      "startTime": "20:00",
+      "location": "Volkshaus"
+    }
+  },
+  {
+    "name": "allevents-goran-bregovic",
+    "url": "https://allevents.in/zurich/goran-bregovi%C4%87-in-z%C3%BCrich/3300029149813428",
+    "expected": {
+      "title": "Goran Bregović in Zürich",
+      "date": "2026-05-17",
+      "startTime": "19:00",
+      "endTime": "21:00",
+      "location": "Kongresshaus Zürich"
+    }
+  },
+  {
+    "name": "meetup-digital-detox-cafe",
+    "url": "https://www.meetup.com/social-circle-zurich/events/313884142/",
+    "expected": {
+      "title": "Digital Detox Café",
+      "date": "2026-05-10",
+      "startTime": "17:30",
+      "endTime": "20:00"
+    }
+  },
+  {
+    "name": "meetup-growth-breakfast",
+    "url": "https://www.meetup.com/the-growth-breakfast-zurich/events/312470830/",
+    "expected": {
+      "title": "The Growth Breakfast",
+      "date": "2026-05-08",
+      "startTime": "09:00"
+    }
+  },
+  {
+    "name": "ticketmaster-metallica-zurich",
+    "url": "https://www.ticketmaster.ch/event/metallica-m72-world-tour-tickets/1691661454?language=en-us",
+    "expected": {
+      "title": "Metallica: M72 World Tour",
+      "date": "2026-05-27",
+      "startTime": "17:30",
+      "location": "Stadion Letzigrund"
+    }
+  },
+  {
+    "name": "amiv-saz",
+    "url": "https://amiv.ethz.ch/de/events/signup/69fc87b025a13e9995f9a474",
+    "expected": {
+      "title": "SAZ",
+      "date": "2026-05-19",
+      "startTime": "16:00",
+      "endTime": "23:30",
+      "location": "CAB Vorhof"
+    }
+  },
+  {
+    "name": "ra-crew-love",
+    "automationBlocked": "RA shows an identity verification page in Playwright.",
+    "url": "https://ra.co/events/2424422",
+    "expected": {
+      "title": "crew love",
+      "date": "2026-05-16",
+      "startTime": "22:00",
+      "endTime": "07:00",
+      "location": "Kauz"
+    }
+  },
+  {
+    "name": "ra-kellerroom-tanzgarten",
+    "automationBlocked": "RA shows an identity verification page in Playwright.",
+    "url": "https://ra.co/events/2418196",
+    "expected": {
+      "title": "KELLERROOM PRESENTS TANZGARTEN",
+      "date": "2026-05-24",
+      "startTime": "20:00",
+      "endTime": "02:00",
+      "location": "Club Bellevue"
+    }
+  },
+  {
+    "name": "eth-learning-teaching-fair",
+    "url": "https://ethz.ch/en/the-eth-zurich/education/innovedum/innovedum-events/Learning-and-Teaching-Fair-2026.html",
+    "expected": {
+      "title": "Learning & Teaching Fair 2026",
+      "date": "2026-05-06",
+      "startTime": "16:30",
+      "location": "ETH Zurich Main Building"
+    }
+  }
+]

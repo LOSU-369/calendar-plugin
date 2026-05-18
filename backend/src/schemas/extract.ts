@@ -18,6 +18,7 @@ export const candidateSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  timezone: z.string().min(1).optional(),
   allDay: z.boolean(),
   location: z.string().optional(),
   description: z.string().optional(),

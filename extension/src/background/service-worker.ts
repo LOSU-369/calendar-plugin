@@ -155,7 +155,7 @@ const runExtraction = async ({
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: MENU_ID,
-    title: "识别选中文本里的活动并添加到 Google Calendar",
+    title: "Extract selected event to Google Calendar",
     contexts: ["selection"]
   });
 });

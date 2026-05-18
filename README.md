@@ -1,62 +1,35 @@
-# Browser Event Extractor (Chrome/Edge) + Backend
+# Event Extractor to Google Calendar
 
-## Project structure
+Open-source Chrome/Edge extension for extracting event details from web pages or selected text, reviewing the result, and creating Google Calendar events.
+
+The extension keeps the final decision with the user: extracted candidates are editable, selectable, and only created after explicit confirmation.
+
+## Features
+
+- Scan the active page for event candidates.
+- Extract from selected text with a right-click context menu.
+- Review and edit title, date, time, timezone, location, and description.
+- Quickly choose only the event you want.
+- Select a writable Google Calendar target.
+- Check nearby calendar events for possible duplicates.
+- Open the created event day in Google Calendar.
+- Optional backend AI fallback when local parsing finds no candidate.
+
+## Repository Structure
 
 ```text
 .
-├─ extension/
-│  ├─ manifest.json
-│  ├─ package.json
-│  ├─ tsconfig.json
-│  ├─ vite.config.ts
-│  ├─ public/
-│  │  └─ manifest.json
-│  └─ src/
-│     ├─ background/
-│     │  └─ service-worker.ts
-│     ├─ content/
-│     │  └─ content-script.ts
-│     ├─ popup/
-│     │  ├─ index.html
-│     │  ├─ main.tsx
-│     │  ├─ ReviewApp.tsx
-│     │  └─ styles.css
-│     ├─ review/
-│     │  ├─ index.html
-│     │  └─ main.tsx
-│     ├─ options/
-│     │  ├─ index.html
-│     │  └─ main.tsx
-│     ├─ lib/
-│     │  ├─ backend-api.ts
-│     │  ├─ background-client.ts
-│     │  ├─ chrome-async.ts
-│     │  ├─ dedupe.ts
-│     │  ├─ google-calendar.ts
-│     │  └─ storage.ts
-│     └─ types/
-│        └─ index.ts
-└─ backend/
-   ├─ .env.example
-   ├─ package.json
-   ├─ tsconfig.json
-   └─ src/
-      ├─ index.ts
-      ├─ routes/
-      │  └─ extract.ts
-      ├─ services/
-      │  └─ extract-service.ts
-      ├─ parsers/
-      │  └─ rule-parser.ts
-      ├─ providers/
-      │  └─ ai-provider.ts
-      ├─ schemas/
-      │  └─ extract.ts
-      └─ utils/
-         └─ date-time.ts
+|-- extension/       Chrome extension source and build config
+|-- backend/         Express extraction API
+|-- docs/            Store listing, OAuth, and release notes
+|-- scripts/         Release check and packaging scripts
+|-- PRIVACY.md       Privacy policy draft for publication
+|-- LICENSE          MIT license
 ```
 
-## 1) Start backend
+## Local Development
+
+### Backend
 
 ```bash
 cd backend
@@ -71,64 +44,111 @@ Health check:
 curl http://localhost:8787/health
 ```
 
-## 2) Start extension build
+### Extension
 
 ```bash
 cd extension
 npm install
+cp .env.example .env
 npm run build
 ```
 
-Then load extension in Chrome/Edge:
+Load it in Chrome or Edge:
 
-1. Open `chrome://extensions` (or `edge://extensions`)
-2. Enable Developer mode
-3. Click `Load unpacked`
-4. Select folder: `extension/dist`
+1. Open `chrome://extensions` or `edge://extensions`.
+2. Enable Developer mode.
+3. Click `Load unpacked`.
+4. Select `extension/dist`.
 
-## 3) Google OAuth setup (required)
+## Google OAuth Setup
 
-1. Create Google Cloud project
-2. Enable Google Calendar API
-3. Configure OAuth consent screen
-4. Create OAuth Client ID for Chrome Extension
-5. Put that client ID into:
-   - `extension/manifest.json` -> `oauth2.client_id`
-   - `extension/public/manifest.json` -> `oauth2.client_id`
-6. Rebuild extension: `npm run build`
+The extension uses Chrome Identity and Google Calendar API. You need an OAuth client ID of type `Chrome Extension`.
 
-## 4) Backend environment variables
+For local development:
 
-`backend/.env`:
+1. Load the unpacked extension.
+2. Copy its extension ID from `chrome://extensions`.
+3. In Google Cloud Console, enable Google Calendar API.
+4. Configure the OAuth consent screen.
+5. Create a Chrome Extension OAuth client using the extension ID.
+6. Copy the generated client ID into both:
+   - `extension/manifest.json`
+   - `extension/public/manifest.json`
+7. Rebuild the extension.
 
-- `PORT`: backend port (default `8787`)
-- `OPENAI_API_KEY`: optional, used for AI fallback parsing
-- `OPENAI_MODEL`: optional, default `gpt-4.1-mini`
+For Chrome Web Store release, use the published extension ID, not only the local unpacked ID. See [docs/OAUTH_SETUP.md](docs/OAUTH_SETUP.md).
 
-## 5) Flow implemented
+## Configuration
 
-- Click extension popup:
-  - Scans current visible viewport text
-  - Captures visible area screenshot (temporary, not persisted)
-  - Sends payload to backend `/extract`
-  - Shows multiple editable candidates
-  - User selects events and confirms creation
-- Right click selected text:
-  - Context menu triggers extraction
-  - Opens same review UI (`review.html`)
-  - User confirms before creation
-- Google Calendar:
-  - First use: choose writable calendar
-  - Saved in `chrome.storage.local`
-  - Can change calendar from popup
-- Dedup:
-  - Checks nearby events in chosen calendar
-  - Marks possible duplicates (does not auto-skip)
+### Backend `.env`
 
-## 6) Notes
+```env
+PORT=8787
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+EVENT_RANKER_MODEL_PATH=
+ALLOWED_EXTENSION_ORIGINS=
+```
 
-- Timezone default: `Europe/Zurich`
-- Date without time -> all-day
-- Start time without end time -> auto end = +2h
-- No AI secrets inside extension
-- Backend validates I/O with zod
+`ALLOWED_EXTENSION_ORIGINS` can be a comma-separated list such as:
+
+```env
+ALLOWED_EXTENSION_ORIGINS=chrome-extension://your-extension-id
+```
+
+Leave it blank for local development. Set it for production deployments.
+
+### Extension `.env`
+
+```env
+VITE_BACKEND_BASE_URL=http://localhost:8787
+```
+
+For public release, build with an HTTPS production backend:
+
+```powershell
+$env:VITE_BACKEND_BASE_URL="https://your-production-backend.example.com"
+cd extension
+npm.cmd run build
+```
+
+## Release Build
+
+Run checks:
+
+```powershell
+cd extension
+npm.cmd run typecheck
+npm.cmd run build
+npm.cmd run release:check
+```
+
+Package for Chrome Web Store:
+
+```powershell
+cd extension
+npm.cmd run package
+```
+
+The release ZIP is written to `release/`. Upload the ZIP contents directly through the Chrome Web Store Developer Dashboard.
+
+More details:
+
+- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
+- [docs/STORE_LISTING.md](docs/STORE_LISTING.md)
+
+## Privacy
+
+See [PRIVACY.md](PRIVACY.md).
+
+Short version: the extension processes page content only when the user requests extraction, sends extraction payloads to the configured backend, and uses Google Calendar access only to list calendars, check duplicates, and create events after confirmation.
+
+## Open Source
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Security
+
+Please report vulnerabilities responsibly. See [SECURITY.md](SECURITY.md).

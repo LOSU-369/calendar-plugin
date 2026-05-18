@@ -1,0 +1,120 @@
+[
+  {
+    "name": "zh-shanghai-ai-lecture",
+    "language": "zh",
+    "region": "CN",
+    "siteType": "community",
+    "pageUrl": "https://example.com/zh-ai-lecture",
+    "pageTitle": "未来城市讲座：AI 与城市更新",
+    "titleHints": ["未来城市讲座：AI 与城市更新"],
+    "visibleText": "未来城市讲座：AI 与城市更新\n时间\n2026年5月19日 周二 晚上7点半 北京时间\n地点\n上海图书馆东馆 7楼报告厅\n简介\n面向公众的城市更新讲座",
+    "expected": {
+      "title": "未来城市讲座：AI 与城市更新",
+      "date": "2026-05-19",
+      "startTime": "19:30",
+      "timezone": "Asia/Shanghai",
+      "location": "上海图书馆东馆"
+    }
+  },
+  {
+    "name": "zh-online-tencent-meeting",
+    "language": "zh",
+    "region": "CN",
+    "siteType": "online",
+    "pageUrl": "https://example.com/zh-online-sharing",
+    "pageTitle": "线上分享会：AI 产品实践",
+    "titleHints": ["线上分享会：AI 产品实践"],
+    "visibleText": "线上分享会：AI 产品实践\n活动时间：2026/05/19 19:30\n地点：腾讯会议\n报名免费，席位有限",
+    "expected": {
+      "title": "线上分享会：AI 产品实践",
+      "date": "2026-05-19",
+      "startTime": "19:30",
+      "location": "腾讯会议"
+    }
+  },
+  {
+    "name": "zh-hong-kong-evening-exhibition",
+    "language": "zh",
+    "region": "HK",
+    "siteType": "museum",
+    "pageUrl": "https://example.com/hk-exhibition-talk",
+    "pageTitle": "香港艺术夜：策展人导览",
+    "titleHints": ["香港艺术夜：策展人导览"],
+    "visibleText": "香港艺术夜：策展人导览\n日期：05-19\n时间：下午7点\n地点：香港艺术中心 麦高利小剧场",
+    "expected": {
+      "title": "香港艺术夜：策展人导览",
+      "date": "2026-05-19",
+      "startTime": "19:00",
+      "location": "香港艺术中心"
+    }
+  },
+  {
+    "name": "de-eth-cab-vorhof",
+    "language": "de",
+    "region": "CH",
+    "siteType": "university",
+    "pageUrl": "https://example.com/eth-cab-vorhof",
+    "pageTitle": "SAZ",
+    "titleHints": ["SAZ"],
+    "visibleText": "SAZ\nSuufe am Zistig\nDienstag, 19.5.2026, 16:00 - 23:30 MESZ\nCHF 5.–84 Plätze verfügbar\nCAB Vorhof",
+    "expected": {
+      "title": "SAZ",
+      "date": "2026-05-19",
+      "startTime": "16:00",
+      "endTime": "23:30",
+      "timezone": "Europe/Zurich",
+      "location": "CAB Vorhof"
+    }
+  },
+  {
+    "name": "de-march-umlaut-month",
+    "language": "de",
+    "region": "DE",
+    "siteType": "theater",
+    "pageUrl": "https://example.com/de-maerz-theater",
+    "pageTitle": "Theaterabend im Saal",
+    "titleHints": ["Theaterabend im Saal"],
+    "visibleText": "Theaterabend im Saal\nDatum/Zeit\n5. März 2026, 19:00 Uhr\nOrt\nTheatersaal im Haus der Kultur",
+    "expected": {
+      "title": "Theaterabend im Saal",
+      "date": "2026-03-05",
+      "startTime": "19:00",
+      "location": "Theatersaal"
+    }
+  },
+  {
+    "name": "en-us-edt-museum",
+    "language": "en",
+    "region": "US",
+    "siteType": "museum",
+    "pageUrl": "https://example.com/us-museum-talk",
+    "pageTitle": "Night at the Museum: Curator Talk",
+    "titleHints": ["Night at the Museum: Curator Talk"],
+    "visibleText": "Night at the Museum: Curator Talk\nDate and Time\nMay 19, 2026, 7 PM EDT\nLocation\nBrooklyn Museum, Brooklyn, NY",
+    "expected": {
+      "title": "Night at the Museum: Curator Talk",
+      "date": "2026-05-19",
+      "startTime": "19:00",
+      "timezone": "America/New_York",
+      "location": "Brooklyn Museum"
+    }
+  },
+  {
+    "name": "en-us-pdt-luma-style",
+    "language": "en",
+    "region": "US",
+    "siteType": "startup",
+    "pageUrl": "https://example.com/sf-luma-style",
+    "pageTitle": "AI Builders Demo Night",
+    "titleHints": ["AI Builders Demo Night"],
+    "visibleText": "AI Builders Demo Night\nTue, May 19\n7 PM - 9 PM PDT\nCanopy Jackson Square\nSan Francisco, CA",
+    "expected": {
+      "title": "AI Builders Demo Night",
+      "date": "2026-05-19",
+      "startTime": "19:00",
+      "endTime": "21:00",
+      "timezone": "America/Los_Angeles",
+      "location": "Canopy Jackson Square"
+    }
+  }
+]

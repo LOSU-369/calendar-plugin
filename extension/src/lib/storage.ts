@@ -5,9 +5,10 @@ const SETTINGS_KEY = "settings";
 const PENDING_SESSION_KEY = "pendingSession";
 const SELECTED_CALENDAR_ID_KEY = "selectedCalendarId";
 const SELECTED_CALENDAR_SUMMARY_KEY = "selectedCalendarSummary";
+const DEFAULT_BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || "http://localhost:8787";
 
 const defaultSettings: StoredSettings = {
-  backendBaseUrl: "http://localhost:8787",
+  backendBaseUrl: DEFAULT_BACKEND_BASE_URL,
   timezone: "Europe/Zurich",
   locale: "en-US",
   debug: false

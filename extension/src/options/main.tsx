@@ -49,6 +49,18 @@ const Options = (): JSX.Element => {
       </label>
       <button onClick={onSave}>Save settings</button>
       {message && <p>{message}</p>}
+      <div className="settings-note">
+        <strong>Data handling:</strong> page content is sent to the configured backend only when extraction is requested.
+        Google Calendar access is used only for calendar selection, duplicate checks, and event creation.
+      </div>
+      <div className="settings-links">
+        <a href="https://github.com/LOSU-369/calendar-plugin/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">
+          Privacy policy
+        </a>
+        <a href="https://github.com/LOSU-369/calendar-plugin" target="_blank" rel="noreferrer">
+          Source code
+        </a>
+      </div>
     </div>
   );
 };

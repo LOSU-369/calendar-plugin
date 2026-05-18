@@ -13,9 +13,9 @@ const GENERIC_AI_TITLE_REJECT_PATTERN =
 const promptForExtraction = (input: ExtractRequest): string => {
   const signalText = input.selectedText?.trim() ? `Selected text:\n${input.selectedText}\n\n` : "";
   return [
-    "You extract calendar event candidates from webpage text.",
+    "You extract calendar event candidates from webpage text and, when provided, from the visible-page screenshot.",
     "Return strict JSON only. No prose.",
-    "Schema: {\"candidates\": [{\"title\": string, \"date\": \"YYYY-MM-DD\", \"endDate\"?: \"YYYY-MM-DD\", \"startTime\"?: \"HH:mm\", \"endTime\"?: \"HH:mm\", \"allDay\": boolean, \"location\"?: string, \"description\"?: string, \"evidence\": string[], \"confidence\": number, \"assumptions\": string[] }]}",
+    "Schema: {\"candidates\": [{\"title\": string, \"date\": \"YYYY-MM-DD\", \"endDate\"?: \"YYYY-MM-DD\", \"startTime\"?: \"HH:mm\", \"endTime\"?: \"HH:mm\", \"timezone\"?: string, \"allDay\": boolean, \"location\"?: string, \"description\"?: string, \"evidence\": string[], \"confidence\": number, \"assumptions\": string[] }]}",
     "Never invent facts. If missing, leave fields empty and record assumptions.",
     "Price or fee is not a title and not a location.",
     "If an event spans multiple days, keep the true endDate.",
@@ -27,6 +27,30 @@ const promptForExtraction = (input: ExtractRequest): string => {
     signalText,
     `Visible text:\n${input.visibleText.slice(0, 25000)}`
   ].join("\n");
+};
+
+const buildResponseInput = (input: ExtractRequest): unknown => {
+  const content: Array<Record<string, string>> = [
+    {
+      type: "input_text",
+      text: promptForExtraction(input)
+    }
+  ];
+
+  if (input.screenshotBase64?.startsWith("data:image/")) {
+    content.push({
+      type: "input_image",
+      image_url: input.screenshotBase64,
+      detail: "auto"
+    });
+  }
+
+  return [
+    {
+      role: "user",
+      content
+    }
+  ];
 };
 
 export const aiFallbackExtract = async (input: ExtractRequest): Promise<ExtractCandidate[]> => {
@@ -42,7 +66,7 @@ export const aiFallbackExtract = async (input: ExtractRequest): Promise<ExtractC
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-      input: promptForExtraction(input),
+      input: buildResponseInput(input),
       temperature: 0.1
     })
   });
@@ -66,6 +90,7 @@ export const aiFallbackExtract = async (input: ExtractRequest): Promise<ExtractC
         endDate: c.endDate,
         startTime: c.startTime,
         endTime: c.endTime,
+        timezone: c.timezone,
         allDay: c.allDay,
         location: c.location,
         description: c.description,

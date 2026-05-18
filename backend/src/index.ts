@@ -7,8 +7,22 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
+const allowedExtensionOrigins = (process.env.ALLOWED_EXTENSION_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: "*" }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || !allowedExtensionOrigins.length || allowedExtensionOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    }
+  })
+);
 app.use(express.json({ limit: "20mb" }));
 
 app.get("/health", (_req, res) => {
