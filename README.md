@@ -96,7 +96,9 @@ ALLOWED_EXTENSION_ORIGINS=
 ALLOWED_EXTENSION_ORIGINS=chrome-extension://your-extension-id
 ```
 
-Leave it blank for local development. Set it for production deployments.
+Leave it blank for local development. In production, valid Chrome extension
+origins are accepted and this list may be used for any additional trusted
+browser origin that should reach the API.
 
 ### Extension `.env`
 
