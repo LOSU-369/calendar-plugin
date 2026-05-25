@@ -2,7 +2,7 @@ import { callExtractApi } from "../lib/backend-api";
 import { checkPotentialDuplicate } from "../lib/dedupe";
 import { getCalendarToken, listWritableCalendars } from "../lib/google-calendar";
 import { getPendingSession, getSelectedCalendar, getSettings, savePendingSession } from "../lib/storage";
-import type { EventCandidate, PendingSession, TriggerSource } from "../types";
+import type { EventCandidate, ExtractRequestPayload, PendingSession, TriggerSource } from "../types";
 
 interface ContentContext {
   visibleText: string;
@@ -11,13 +11,26 @@ interface ContentContext {
 }
 
 const MENU_ID = "extract-selected-event";
+const CONTENT_MESSAGE_TIMEOUT_MS = 5_000;
+const SCREENSHOT_TIMEOUT_MS = 3_000;
 
 const isInjectablePage = (url?: string): boolean => Boolean(url && /^https?:\/\//i.test(url));
 
 const sendTabMessage = <T>(tabId: number, message: unknown): Promise<T> =>
   new Promise((resolve, reject) => {
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      settled = true;
+      reject(new Error("Page content scan timed out."));
+    }, CONTENT_MESSAGE_TIMEOUT_MS);
+
     chrome.tabs.sendMessage(tabId, message, (response: T) => {
       const error = chrome.runtime.lastError;
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timeoutId);
       if (error) {
         reject(new Error(error.message));
         return;
@@ -29,7 +42,9 @@ const sendTabMessage = <T>(tabId: number, message: unknown): Promise<T> =>
 const captureVisibleTabSafe = async (windowId?: number): Promise<string | undefined> => {
   try {
     const image = await new Promise<string>((resolve, reject) => {
+      const timeoutId = setTimeout(() => reject(new Error("Screenshot capture timed out.")), SCREENSHOT_TIMEOUT_MS);
       const callback = (dataUrl: string): void => {
+        clearTimeout(timeoutId);
         const error = chrome.runtime.lastError;
         if (error) {
           reject(new Error(error.message));
@@ -114,27 +129,34 @@ const runExtraction = async ({
   if (tab.id) {
     try {
       context = await requestPageContext(tab);
-    } catch {
-      // For context-menu flow we can still extract from selectedText even if content-script is unavailable.
+    } catch (error) {
+      if (!selectedText?.trim()) {
+        throw error;
+      }
+      // For context-menu flow we can still extract from selected text if page scanning is unavailable.
       context = { visibleText: selectedText ?? "" };
     }
   }
-  const screenshotBase64 = await captureVisibleTabSafe(tab.windowId);
   const finalVisibleText = context.visibleText || selectedText || "";
   if (!finalVisibleText.trim()) {
     throw new Error("No extractable text found from current page or selection.");
   }
-  const payload = {
+  const payload: ExtractRequestPayload = {
     pageUrl: tab.url!,
     pageTitle: tab.title ?? "",
     visibleText: finalVisibleText,
     selectedText: selectedText ?? context.selectedText,
     titleHints: context.titleHints,
-    screenshotBase64,
     timezone: settings.timezone,
     locale: settings.locale
   };
-  const extracted = await callExtractApi(settings.backendBaseUrl, payload);
+  let extracted = await callExtractApi(settings.backendBaseUrl, payload);
+  if (!extracted.candidates.length) {
+    const screenshotBase64 = await captureVisibleTabSafe(tab.windowId);
+    if (screenshotBase64) {
+      extracted = await callExtractApi(settings.backendBaseUrl, { ...payload, screenshotBase64 });
+    }
+  }
   const candidates = await withDedupe(extracted.candidates);
   await chrome.storage.local.remove(["lastError"]);
   const session: PendingSession = {

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Event Extractor to Google Calendar",
   "short_name": "Event Extractor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Extract events from visible content or selected text and create Google Calendar events after confirmation.",
   "homepage_url": "https://github.com/LOSU-369/calendar-plugin",
   "icons": {
