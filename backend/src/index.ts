@@ -11,7 +11,7 @@ const allowedExtensionOrigins = (process.env.ALLOWED_EXTENSION_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
-const isChromeExtensionOrigin = (origin: string): boolean => /^chrome-extension:\/\/[a-p]{32}$/.test(origin);
+const isChromeExtensionOrigin = (origin: string): boolean => /^chrome-extension:\/\/[a-p]{32,64}$/.test(origin);
 
 app.use(
   cors({
