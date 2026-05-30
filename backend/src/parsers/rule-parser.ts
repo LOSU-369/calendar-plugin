@@ -698,6 +698,178 @@ const extractInlineDateCandidates = (lines: string[], input: ExtractRequest): Ex
   return uniqueBySignature(candidates);
 };
 
+const ETH_EXAM_TYPE_PATTERN = /^[sm]$/i;
+const ETH_EXAM_DATE_PATTERN = /^(?:(?:mo|di|mi|do|fr|sa|so)\s+)?(\d{1,2})\.(\d{1,2})\.(?:(\d{2,4}))?$/i;
+const ETH_EXAM_TIME_RANGE_PATTERN = /^(\d{1,2}):(\d{2})\s*(?:-|[\u2010-\u2015]|bis)\s*(\d{1,2}):(\d{2})$/i;
+const ETH_COURSE_CODE_PATTERN = /^\d{3}-\d{4}-\d{2}[A-Z]$/i;
+const ETH_EXAM_HEADER_PATTERN =
+  /^(?:plan der|s\/m|schriftliche prufung|schriftliche pruefung|schriftliche prüfung|mundliche prufung|muendliche pruefung|mündliche prüfung|datum|zeit|nummer|fach|hilfsmittel|prufende|prüfende|zuruck|zurück)$/i;
+const ETH_EXAM_HELPER_TEXT_PATTERN =
+  /^(?:pen\b|no personal\b|any devices\b|thermodynamic tables\b|for the final exam\b|ten single-sided\b|electronic\b|nicht\b|keine\b|eine offizielle\b|zusatzlich\b|zusätzlich\b|\d+\s*a4\b)/i;
+const ETH_EXAMINER_PATTERN =
+  /^(?:[A-Z]\.\s*){1,3}[\p{L}'-]+(?:\s+[\p{L}'-]+)?(?:\s*,\s*(?:[A-Z]\.\s*){1,3}[\p{L}'-]+(?:\s+[\p{L}'-]+)?)*$/u;
+
+interface EthExamRowStart {
+  startIndex: number;
+  dateIndex: number;
+  timeIndex: number;
+  codeIndex: number;
+}
+
+const isEthExamPlan = (lines: string[], input: ExtractRequest): boolean => {
+  const pageUrl = input.pageUrl.toLowerCase();
+  if (pageUrl.includes("lehrbetrieb.ethz.ch") && pageUrl.includes("pruefungsplan")) {
+    return true;
+  }
+  const normalizedText = normalizeHeuristicText(lines.slice(0, 40).join(" "));
+  return normalizedText.includes("sessionsprufungen") && normalizedText.includes("hilfsmittel") && normalizedText.includes("prufende");
+};
+
+const parseEthExamDate = (value: string, now = new Date()): string | undefined => {
+  const match = value.trim().match(ETH_EXAM_DATE_PATTERN);
+  if (!match) {
+    return undefined;
+  }
+  const rawYear = match[3];
+  const year = rawYear ? Number(rawYear.length === 2 ? `20${rawYear}` : rawYear) : now.getFullYear();
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return undefined;
+  }
+  return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+};
+
+const parseEthExamTimeRange = (value: string): { startTime: string; endTime: string } | undefined => {
+  const match = value.trim().match(ETH_EXAM_TIME_RANGE_PATTERN);
+  if (!match) {
+    return undefined;
+  }
+  const startHour = Number(match[1]);
+  const startMinute = Number(match[2]);
+  const endHour = Number(match[3]);
+  const endMinute = Number(match[4]);
+  if ([startHour, endHour].some((hour) => hour < 0 || hour > 23) || [startMinute, endMinute].some((minute) => minute < 0 || minute > 59)) {
+    return undefined;
+  }
+  return {
+    startTime: `${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}`,
+    endTime: `${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}`
+  };
+};
+
+const getEthExamRowStart = (lines: string[], index: number): EthExamRowStart | undefined => {
+  const directDate = parseEthExamDate(lines[index] ?? "");
+  if (directDate && parseEthExamTimeRange(lines[index + 1] ?? "") && ETH_COURSE_CODE_PATTERN.test(lines[index + 2] ?? "")) {
+    return {
+      startIndex: index,
+      dateIndex: index,
+      timeIndex: index + 1,
+      codeIndex: index + 2
+    };
+  }
+
+  if (
+    ETH_EXAM_TYPE_PATTERN.test(lines[index] ?? "") &&
+    parseEthExamDate(lines[index + 1] ?? "") &&
+    parseEthExamTimeRange(lines[index + 2] ?? "") &&
+    ETH_COURSE_CODE_PATTERN.test(lines[index + 3] ?? "")
+  ) {
+    return {
+      startIndex: index,
+      dateIndex: index + 1,
+      timeIndex: index + 2,
+      codeIndex: index + 3
+    };
+  }
+
+  return undefined;
+};
+
+const isEthExamNoiseLine = (line: string): boolean => {
+  const normalized = normalizeHeuristicText(line);
+  return (
+    !normalized ||
+    ETH_EXAM_HEADER_PATTERN.test(normalized) ||
+    ETH_EXAM_TYPE_PATTERN.test(line) ||
+    Boolean(parseEthExamDate(line)) ||
+    Boolean(parseEthExamTimeRange(line)) ||
+    ETH_COURSE_CODE_PATTERN.test(line) ||
+    ETH_EXAM_HELPER_TEXT_PATTERN.test(line) ||
+    ETH_EXAMINER_PATTERN.test(line)
+  );
+};
+
+const findNextEthExamRowIndex = (lines: string[], afterIndex: number): number => {
+  for (let index = afterIndex + 1; index < lines.length; index += 1) {
+    if (getEthExamRowStart(lines, index)) {
+      return index;
+    }
+  }
+  return lines.length;
+};
+
+const extractEthExamPlanCandidates = (lines: string[], input: ExtractRequest): ExtractCandidate[] => {
+  if (!isEthExamPlan(lines, input)) {
+    return [];
+  }
+
+  const candidates: ExtractCandidate[] = [];
+  const seenRows = new Set<number>();
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const row = getEthExamRowStart(lines, index);
+    if (!row || seenRows.has(row.startIndex)) {
+      continue;
+    }
+    seenRows.add(row.startIndex);
+
+    const date = parseEthExamDate(lines[row.dateIndex] ?? "");
+    const timeRange = parseEthExamTimeRange(lines[row.timeIndex] ?? "");
+    const courseCode = lines[row.codeIndex]?.trim();
+    if (!date || !timeRange || !courseCode) {
+      continue;
+    }
+
+    const nextRowIndex = findNextEthExamRowIndex(lines, row.startIndex);
+    let titleIndex = -1;
+    for (let cursor = row.codeIndex + 1; cursor < Math.min(nextRowIndex, row.codeIndex + 8); cursor += 1) {
+      const line = lines[cursor]?.trim() ?? "";
+      if (!isEthExamNoiseLine(line)) {
+        titleIndex = cursor;
+        break;
+      }
+    }
+    if (titleIndex < 0) {
+      continue;
+    }
+
+    const title = lines[titleIndex].trim();
+    const descriptionLines = lines
+      .slice(titleIndex + 1, nextRowIndex)
+      .map((line) => line.trim())
+      .filter((line) => line && !ETH_EXAM_TYPE_PATTERN.test(line) && !ETH_EXAMINER_PATTERN.test(line));
+
+    candidates.push({
+      id: randomUUID(),
+      title,
+      date,
+      endDate: date,
+      startTime: timeRange.startTime,
+      endTime: timeRange.endTime,
+      timezone: input.timezone,
+      allDay: false,
+      description: [`Course number: ${courseCode}`, ...descriptionLines].join("\n").slice(0, 1000),
+      sourceUrl: input.pageUrl,
+      evidence: lines.slice(row.startIndex, Math.min(nextRowIndex, titleIndex + 5)),
+      confidence: 0.97,
+      assumptions: ["Parsed from ETH exam schedule table."]
+    });
+  }
+
+  return uniqueBySignature(candidates).slice(0, 12);
+};
+
 const extractLabeledFieldCandidates = (lines: string[], input: ExtractRequest): ExtractCandidate[] => {
   const fieldValues: Record<StructuredFieldKey, string[]> = {
     title: [],
@@ -984,6 +1156,11 @@ export const parseByRules = (input: ExtractRequest): ExtractCandidate[] => {
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
+
+  const ethExamCandidates = extractEthExamPlanCandidates(lines, input);
+  if (ethExamCandidates.length) {
+    return ethExamCandidates;
+  }
 
   const labeledFieldCandidates = extractLabeledFieldCandidates(lines, input);
   if (labeledFieldCandidates.length) {

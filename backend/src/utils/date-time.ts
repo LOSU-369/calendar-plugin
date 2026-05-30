@@ -348,6 +348,9 @@ export const extractTimesFromText = (text: string): string[] => {
     if (inCoveredRange(match.index ?? 0)) {
       continue;
     }
+    if (match[2] === "." && text[(match.index ?? 0) + match[0].length] === ".") {
+      continue;
+    }
     addTimeMatch(matches, match.index ?? 0, Number(match[1]), Number(match[3]));
   }
   for (const match of text.matchAll(amPmTimeRegex)) {
